@@ -38,7 +38,7 @@ static PoseNode poses[NUM_POSES][NUM_NODES] = {
 		PoseNode(0), PoseNode(0),
 	},
 	{
-		PoseNode(1, 500), PoseNode(1, 500),
+		PoseNode(1, 500), PoseNode(0, 500),
 		PoseNode(0), PoseNode(0),
 		PoseNode(0), PoseNode(0),
 		PoseNode(0), PoseNode(0),
@@ -62,7 +62,7 @@ static PoseNode poses[NUM_POSES][NUM_NODES] = {
 		PoseNode(0), PoseNode(0),
 		PoseNode(0), PoseNode(0),
 		PoseNode(0), PoseNode(0),
-		PoseNode(1, 500), PoseNode(1, 500),
+		PoseNode(1, 500), PoseNode(0, 500),
 		PoseNode(0), PoseNode(0),
 	},
 };
