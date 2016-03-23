@@ -134,7 +134,7 @@ void updateTargets() {
 }
 
 void updateLEDs() {
-	PoseNode *targets = poses[poseIndex];
+	PoseNode *poseNodes = poses[poseIndex];
 
 	for (int i = 0; i < NUM_NODES; i++) {
 
@@ -144,7 +144,7 @@ void updateLEDs() {
 		Serial.print(" ");
 #endif
 
-		if (targets[i].active()) {
+		if (poseNodes[i].active()) {
 
 #ifndef DEBUG
 			values[i] = analogRead(A0 + i);
