@@ -1,68 +1,72 @@
 #include <Adafruit_NeoPixel.h>
 
+#include "PoseNode.hpp"
+
 #define DEBUG
+
+#define BRIGHTNESS (2)
 
 #define NUM_NODES (10)
 #define NUM_PIXELS (60)
 #define NUM_POSES (7)
 #define PIN (2)
-#define THRESHOLD (5)
 
-static const int THRESHOLDS[NUM_NODES] = { 13, 8, 18, 14, 21, 25, 12, 18, 44, 44 };
+#define THRESHOLD (5)
+static int THRESHOLDS[NUM_NODES] = { 0 };
 
 static int values[NUM_NODES];
-static bool poses[NUM_POSES][NUM_NODES] = {
+static PoseNode poses[NUM_POSES][NUM_NODES] = {
 	{
-		1, 1,
-		1, 1,
-		1, 1,
-		1, 1,
-		1, 1,
+		PoseNode(1), PoseNode(1),
+		PoseNode(1), PoseNode(1),
+		PoseNode(1), PoseNode(1),
+		PoseNode(1), PoseNode(1),
+		PoseNode(1), PoseNode(1),
 	},
 	{
-		0, 0,
-		0, 0,
-		0, 0,
-		0, 1,
-		0, 0,
+		PoseNode(0), PoseNode(0),
+		PoseNode(0), PoseNode(0),
+		PoseNode(0), PoseNode(0),
+		PoseNode(0), PoseNode(1),
+		PoseNode(0), PoseNode(0),
 	},
 	{
-		0, 0,
-		1, 1,
-		0, 0,
-		1, 1,
-		0, 0,
+		PoseNode(0), PoseNode(0),
+		PoseNode(1), PoseNode(1),
+		PoseNode(0), PoseNode(0),
+		PoseNode(1), PoseNode(1),
+		PoseNode(0), PoseNode(0),
 	},
 	{
-		1, 1,
-		0, 0,
-		0, 0,
-		0, 0,
-		1, 1,
+		PoseNode(1, 500), PoseNode(1, 500),
+		PoseNode(0), PoseNode(0),
+		PoseNode(0), PoseNode(0),
+		PoseNode(0), PoseNode(0),
+		PoseNode(1), PoseNode(1),
 	},
 	{
-		1, 1,
-		0, 0,
-		0, 0,
-		0, 0,
-		1, 1,
+		PoseNode(1), PoseNode(1),
+		PoseNode(0), PoseNode(0),
+		PoseNode(0), PoseNode(0),
+		PoseNode(0), PoseNode(0),
+		PoseNode(1), PoseNode(1),
 	},
 	{
-		0, 0,
-		0, 0,
-		0, 0,
-		1, 1,
-		0, 0,
+		PoseNode(0), PoseNode(0),
+		PoseNode(0), PoseNode(0),
+		PoseNode(0), PoseNode(0),
+		PoseNode(1), PoseNode(1),
+		PoseNode(0), PoseNode(0),
 	},
 	{
-		0, 0,
-		0, 0,
-		0, 0,
-		1, 1,
-		0, 0,
+		PoseNode(0), PoseNode(0),
+		PoseNode(0), PoseNode(0),
+		PoseNode(0), PoseNode(0),
+		PoseNode(1, 500), PoseNode(1, 500),
+		PoseNode(0), PoseNode(0),
 	},
 };
-static int currentPose;
+static int poseIndex;
 
 Adafruit_NeoPixel pixels[NUM_NODES] = {
 	Adafruit_NeoPixel(NUM_PIXELS, PIN + 0, NEO_RGBW + NEO_KHZ800),
@@ -80,6 +84,7 @@ Adafruit_NeoPixel pixels[NUM_NODES] = {
 void setup() {
 	Serial.begin(9600);
 
+	calibrateSensors();
 	setupLEDs();
 	clearLEDs();
 }
@@ -90,11 +95,20 @@ void loop() {
 	delay(16);
 }
 
+void calibrateSensors() {
+	for (int j = 0; j < 10; j++) {
+		for (int i = 0; i < NUM_NODES; i++) {
+			pinMode(A0 + i, INPUT);
+			THRESHOLDS[i] = analogRead(A0 + i) + THRESHOLD;
+		}
+		delay(10);
+	}
+}
+
 void setupLEDs() {
 	for (int i = 0; i < NUM_NODES; i++) {
-		pinMode(A0 + i, INPUT);
 		pixels[i].begin();
-		pixels[i].setBrightness(48);
+		pixels[i].setBrightness(BRIGHTNESS);
 	}
 }
 
@@ -110,36 +124,33 @@ void updateTargets() {
 	while (Serial.available()) {
 		int c = Serial.read();
 		if (c == 2) {
-			currentPose = (currentPose + 1) % NUM_POSES;
+			poseIndex = (poseIndex + 1) % NUM_POSES;
 		} else if (c == 1) {
-			if (--currentPose < 0) {
-				currentPose = NUM_POSES - 1;
+			if (--poseIndex < 0) {
+				poseIndex = NUM_POSES - 1;
 			}
 		}
 	}
 }
 
 void updateLEDs() {
-	bool *targets = poses[currentPose];
+	PoseNode *targets = poses[poseIndex];
 
 	for (int i = 0; i < NUM_NODES; i++) {
 
 #ifdef DEBUG
-		analogRead(A0 + i);
-		delay(10);
-		values[i] = (analogRead(A0 + i) + (values[i] * 3)) >> 2;
-		//values[i] = (analogRead(A0 + i) + (values[i] * 2)) >> 1;
+		values[i] = analogRead(A0 + i);
 		Serial.print(values[i]);
 		Serial.print(" ");
 #endif
 
-		if (targets[i]) {
+		if (targets[i].active()) {
 
 #ifndef DEBUG
-			values[i] = (analogRead(A0 + i) + (values[i] * 7)) >> 3;
+			values[i] = analogRead(A0 + i);
 #endif
 
-			if (values[i] < THRESHOLDS[i]) {
+			if (values[i] >= THRESHOLDS[i]) {
 				for (int j = 0; j < NUM_PIXELS; j++) {
 					pixels[i].setPixelColor(j, pixels[i].Color(255, 0, 0));
 				}
@@ -150,7 +161,7 @@ void updateLEDs() {
 			}
 		} else {
 			for (int j = 0; j < NUM_PIXELS; j++) {
-					pixels[i].setPixelColor(j, pixels[i].Color(0, 0, 0));
+				pixels[i].setPixelColor(j, pixels[i].Color(0, 0, 0));
 			}
 		}
 
