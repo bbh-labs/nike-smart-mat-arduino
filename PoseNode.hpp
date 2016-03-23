@@ -10,6 +10,8 @@ public:
 	PoseNode(bool active);
 	PoseNode(bool active, int interval);
 
+	void update();
+
 	int type() const;
 	int active() const;
 	int interval() const;

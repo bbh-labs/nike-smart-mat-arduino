@@ -1,5 +1,7 @@
 #include "PoseNode.hpp"
 
+#include <Arduino.h>
+
 PoseNode::PoseNode() :
 	mType(MODE_DEFAULT),
 	mActive(false),
@@ -19,6 +21,15 @@ PoseNode::PoseNode(bool active, int interval) :
 	mActive(active),
 	mInterval(interval)
 {
+}
+
+void PoseNode::update() {
+	unsigned long t = millis() % (mInterval * 2);
+	if (t > mInterval) {
+		mActive = true;
+	} else {
+		mActive = false;
+	}
 }
 
 int PoseNode::type() const {

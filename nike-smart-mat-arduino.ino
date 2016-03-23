@@ -84,18 +84,18 @@ Adafruit_NeoPixel pixels[NUM_NODES] = {
 void setup() {
 	Serial.begin(9600);
 
-	calibrateSensors();
+	calibrate();
 	setupLEDs();
 	clearLEDs();
 }
 
 void loop() {
-	updateTargets();
+	updatePose();
 	updateLEDs();
 	delay(16);
 }
 
-void calibrateSensors() {
+void calibrate() {
 	for (int j = 0; j < 10; j++) {
 		for (int i = 0; i < NUM_NODES; i++) {
 			pinMode(A0 + i, INPUT);
@@ -120,15 +120,29 @@ void clearLEDs() {
 	}
 }
 
-void updateTargets() {
+void updatePose() {
 	while (Serial.available()) {
 		int c = Serial.read();
-		if (c == 2) {
-			poseIndex = (poseIndex + 1) % NUM_POSES;
-		} else if (c == 1) {
+		switch (c) {
+		case 1:
 			if (--poseIndex < 0) {
 				poseIndex = NUM_POSES - 1;
 			}
+			break;
+		case 2:
+			poseIndex = (poseIndex + 1) % NUM_POSES;
+			break;
+		case 3:
+			calibrate();
+			break;
+		case 10:
+		case 11:
+		case 12:
+		case 13:
+		case 14:
+		case 15:
+			poseIndex = c - 10;
+			break;
 		}
 	}
 }
@@ -143,6 +157,8 @@ void updateLEDs() {
 		Serial.print(values[i]);
 		Serial.print(" ");
 #endif
+
+		poseNodes[i].update();
 
 		if (poseNodes[i].active()) {
 
